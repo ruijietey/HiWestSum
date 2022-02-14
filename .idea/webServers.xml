@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="d33b04a7-456d-4e94-a80e-f22233d21083" name="MLDA-BERTSUM">
+        <fileTransfer rootFolder="/home/students/s121md102_06/" accessType="SFTP" host="mdeep02.dynip.ntu.edu.sg" port="22" sshConfigId="c075b5e5-8fe3-41de-9160-4476ac08df92" sshConfig="s121md102_06@mdeep02.dynip.ntu.edu.sg:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

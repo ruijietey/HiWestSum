@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteMappingsManager">
+    <list>
+      <list>
+        <remote-mappings server-id="python@sftp://s121md102_06@mdeep02.dynip.ntu.edu.sg:22/home/students/s121md102_06/bertsum_experiment/PreSummWithMobileBert/myEnv/bin/python">
+          <settings>
+            <list>
+              <mapping local-root="$PROJECT_DIR$" remote-root="/home/students/s121md102_06/bertsum_experiment/PreSummWithMobileBert" />
+            </list>
+          </settings>
+        </remote-mappings>
+      </list>
+    </list>
+  </component>
+</project>
