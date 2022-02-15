@@ -7,7 +7,8 @@ from __future__ import division
 import argparse
 import os
 from others.logging import init_logger
-from train_extractive import train_ext, validate_ext, test_ext
+# from train_abstractive import validate_abs, train_abs, baseline, test_abs, test_text_abs #(Not using abstractive summarization in our study)
+from train_extractive_hiwest import train_ext, validate_ext, test_ext
 
 
 model_flags = ['hidden_size', 'ff_size', 'heads', 'emb_size', 'enc_layers', 'enc_hidden_size', 'enc_ff_size',
@@ -108,10 +109,10 @@ if __name__ == '__main__':
     parser.add_argument("-report_rouge", type=str2bool, nargs='?',const=True,default=True)
     parser.add_argument("-block_trigram", type=str2bool, nargs='?', const=True, default=True)
 
-    ### Start Modifying ###
-    parser.add_argument("-other_bert", default=None, type=str)
+    # START MODIFICATION
+    parser.add_argument("-other_bert", default="distilbert", type=str)
     parser.add_argument("-architecture", default='bertsum', type=str, choices=['bertsum', 'hiwest'])
-    ### End Modifying ###
+    # END MODIFICATION
 
     args = parser.parse_args()
     args.gpu_ranks = [int(i) for i in range(len(args.visible_gpus.split(',')))]
