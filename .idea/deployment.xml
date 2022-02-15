@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="s121md102_06@mdeep02.dynip.ntu.edu.sg:22 password" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" autoUpload="Always" serverName="MLDA-BERTSUM" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
       <paths name="MLDA-BERTSUM">
         <serverdata>
@@ -12,7 +12,7 @@
       <paths name="s121md102_06@mdeep02.dynip.ntu.edu.sg:22 password">
         <serverdata>
           <mappings>
-            <mapping deploy="/tmp/pycharm_project_85" local="$PROJECT_DIR$" />
+            <mapping deploy="/bertsum_experiment/PreSummWithMobileBert/" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>
@@ -34,6 +34,13 @@
         <serverdata>
           <mappings>
             <mapping deploy="/tmp/pycharm_project_85" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="s121md102_06@mdeep02.dynip.ntu.edu.sg:22 password (4)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/bertsum_experiment/PreSummWithMobileBert/" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>

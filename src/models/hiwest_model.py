@@ -194,7 +194,7 @@ class HiWestSummarizer(nn.Module):
     def forward(self, src, segs, clss, mask_src, mask_cls):
         sent_scores, mask_cls = self.sent_encoder(src, segs, clss, mask_src, mask_cls)
         if self.args.architecture == 'bertsum':
-            return sent_scores
+            return sent_scores, mask_cls
         else:
             doc_scores = self.doc_encoder(sent_scores, segs, mask_cls)
             scores = torch.clamp_max(((sent_scores + doc_scores) / 2), max=1.0)
