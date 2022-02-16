@@ -70,14 +70,15 @@ class TransformerEncoderLayer(nn.Module):
 
 
 class ExtTransformerEncoder(nn.Module):
-    def __init__(self, d_model, d_ff, heads, dropout, num_inter_layers=0):
+    def __init__(self, transformer, d_model, d_ff, heads, dropout, num_inter_layers=0 ):
         super(ExtTransformerEncoder, self).__init__()
         self.d_model = d_model
         self.num_inter_layers = num_inter_layers
         self.pos_emb = PositionalEncoding(dropout, d_model)
-        self.transformer_inter = nn.ModuleList(
-            [TransformerEncoderLayer(d_model, heads, d_ff, dropout)
-             for _ in range(num_inter_layers)])
+        self.transformer_inter = transformer.layer
+        # self.transformer_inter = nn.ModuleList(
+        #     [TransformerEncoderLayer(d_model, heads, d_ff, dropout)
+        #      for _ in range(num_inter_layers)])
         self.dropout = nn.Dropout(dropout)
         self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
         self.wo = nn.Linear(d_model, 1, bias=True)
@@ -92,7 +93,7 @@ class ExtTransformerEncoder(nn.Module):
         x = x + pos_emb
 
         for i in range(self.num_inter_layers):
-            x = self.transformer_inter[i](i, x, x, ~mask)  # all_sents * max_tokens * dim (Modified Masking for Pytorch above v1.2)
+            x, = self.transformer_inter[i](x, mask)  # all_sents * max_tokens * dim (Modified Masking for Pytorch above v1.2)
             # x = self.transformer_inter[i](i, x, x, 1 - mask)  # all_sents * max_tokens * dim
 
         x = self.layer_norm(x)
@@ -102,39 +103,39 @@ class ExtTransformerEncoder(nn.Module):
         return sent_scores
 
 
-class SentEncoder(nn.Module):
-    def __init__(self, bert, ext_layer, args, device):
-        super(SentEncoder, self).__init__()
-        self.args = args
-        self.device = device
-        self.bert = bert
-        self.ext_layer = ext_layer
-        # self.ext_layer = self.bert.model.transformer #TODO: Use this for Weight Sharing
-
-        self.to(device)
-
-    def forward(self, src, segs, clss, mask_src, mask_cls):
-        top_vec = self.bert(src, segs, mask_src)    # top_vec: Tensor(num_batch, token_length, hidden_size)
-        sents_vec = top_vec[torch.arange(top_vec.size(0)).unsqueeze(1), clss]   # sents_vec: Tensor(num_batch, num_sents, hidden_size)
-        sents_vec = sents_vec * mask_cls[:, :, None].float()    # sents_vec: Tensor(num_batch, num_sents, hidden_size)
-        sent_scores = self.ext_layer(sents_vec, mask_cls).squeeze(-1)   # sent_scores: Tensor(num_batch, num_sents)
-        return sent_scores, mask_cls
-
-
-class DocEncoder(nn.Module):
-    def __init__(self, bert, ext_layer, args, device):
-        super(DocEncoder, self).__init__()
-        self.args = args
-        self.device = device
-        self.bert = bert
-        self.ext_layer = ext_layer
-
-        self.to(device)
-
-    def forward(self, sents_vec, segs, mask_sents):
-        doc_embedding = torch.zeros(1, 1, self.bert.model.config.hidden_size).to(self.device)   # doc_embedding: Tensor(1, 1, hidden_size)
-        doc_embedding[:, :, :sents_vec.size(1)] = sents_vec # doc_embedding: Tensor(1, 1, hidden_size) # Added sent scores
-        doc_score = self.ext_layer(doc_embedding, mask_sents).squeeze(-1)
-        return doc_score
-
+# class SentEncoder(nn.Module):
+#     def __init__(self, bert, ext_layer, args, device):
+#         super(SentEncoder, self).__init__()
+#         self.args = args
+#         self.device = device
+#         self.bert = bert
+#         self.ext_layer = ext_layer
+#         # self.ext_layer = self.bert.model.transformer
+#
+#         self.to(device)
+#
+#     def forward(self, src, segs, clss, mask_src, mask_cls):
+#         top_vec = self.bert(src, segs, mask_src)    # top_vec: Tensor(num_batch, token_length, hidden_size)
+#         sents_vec = top_vec[torch.arange(top_vec.size(0)).unsqueeze(1), clss]   # sents_vec: Tensor(num_batch, num_sents, hidden_size)
+#         sents_vec = sents_vec * mask_cls[:, :, None].float()    # sents_vec: Tensor(num_batch, num_sents, hidden_size)
+#         sent_scores = self.ext_layer(sents_vec, mask_cls).squeeze(-1)   # sent_scores: Tensor(num_batch, num_sents)
+#         return sent_scores, mask_cls
+#
+#
+# class DocEncoder(nn.Module):
+#     def __init__(self, bert, ext_layer, args, device):
+#         super(DocEncoder, self).__init__()
+#         self.args = args
+#         self.device = device
+#         self.bert = bert
+#         self.ext_layer = ext_layer
+#
+#         self.to(device)
+#
+#     def forward(self, sents_vec, segs, mask_sents):
+#         doc_embedding = torch.zeros(1, 1, self.bert.model.config.hidden_size).to(self.device)   # doc_embedding: Tensor(1, 1, hidden_size)
+#         doc_embedding[:, :, :sents_vec.size(1)] = sents_vec # doc_embedding: Tensor(1, 1, hidden_size) # Added sent scores
+#         doc_score = self.ext_layer(doc_embedding, mask_sents).squeeze(-1)
+#         return doc_score
+#
 
