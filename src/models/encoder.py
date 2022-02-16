@@ -127,7 +127,7 @@ class DocEncoder(nn.Module):
         self.args = args
         self.device = device
         self.bert = bert
-        self.ext_layer = ext_layer
+        self.ext_layer = ext_layerzvvv
 
         self.to(device)
 
