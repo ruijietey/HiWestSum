@@ -114,10 +114,10 @@ class SentEncoder(nn.Module):
         self.to(device)
 
     def forward(self, src, segs, clss, mask_src, mask_cls):
-        top_vec = self.bert(src, segs, mask_src)
-        sents_vec = top_vec[torch.arange(top_vec.size(0)).unsqueeze(1), clss]
-        sents_vec = sents_vec * mask_cls[:, :, None].float()
-        sent_scores = self.ext_layer(sents_vec, mask_cls).squeeze(-1)
+        top_vec = self.bert(src, segs, mask_src)    # top_vec: Tensor(num_batch, token_length, hidden_size)
+        sents_vec = top_vec[torch.arange(top_vec.size(0)).unsqueeze(1), clss]   # sents_vec: Tensor(num_batch, num_sents, hidden_size)
+        sents_vec = sents_vec * mask_cls[:, :, None].float()    # sents_vec: Tensor(num_batch, num_sents, hidden_size)
+        sent_scores = self.ext_layer(sents_vec, mask_cls).squeeze(-1)   # sent_scores: Tensor(num_batch, num_sents)
         return sent_scores, mask_cls
 
 
@@ -132,8 +132,8 @@ class DocEncoder(nn.Module):
         self.to(device)
 
     def forward(self, sents_vec, segs, mask_sents):
-        doc_embedding = torch.zeros(1, 1, self.bert.model.config.hidden_size).to(self.device)
-        doc_embedding[:, :, :sents_vec.size(1)] = sents_vec
+        doc_embedding = torch.zeros(1, 1, self.bert.model.config.hidden_size).to(self.device)   # doc_embedding: Tensor(1, 1, hidden_size)
+        doc_embedding[:, :, :sents_vec.size(1)] = sents_vec # doc_embedding: Tensor(1, 1, hidden_size) # Added sent scores
         doc_score = self.ext_layer(doc_embedding, mask_sents).squeeze(-1)
         return doc_score
 
