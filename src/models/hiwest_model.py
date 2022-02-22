@@ -2,7 +2,7 @@ import copy
 
 import torch
 import torch.nn as nn
-from transformers import BertConfig, BertModel, DistilBertConfig, DistilBertModel
+from transformers import BertConfig, BertModel, DistilBertConfig, DistilBertModel, AlbertModel, AlbertConfig
 from torch.nn.init import xavier_uniform_
 
 from models.encoder import Classifier, ExtTransformerEncoder
@@ -122,6 +122,8 @@ class Bert(nn.Module):
         ### Start Modifying ###
         elif other_bert == 'distilbert':
             self.model = DistilBertModel.from_pretrained('distilbert-base-uncased', cache_dir=temp_dir)
+        elif other_bert == 'albert':
+            self.model = AlbertModel.from_pretrained('albert-base-v2', cache_dir=temp_dir)
         ### End Modifying ###
 
         else:
@@ -142,64 +144,16 @@ class Bert(nn.Module):
         ### End Modifying ###
 
         else:
-            if(self.finetune):
+            if self.finetune and self.other_bert == 'distilbert':
                 top_vec, _ = self.model(input_ids=x, token_type_ids=segs, attention_mask=mask)
+            elif self.finetune and self.other_bert == 'albert':
+                top_vec = self.model(input_ids=x, token_type_ids=segs, attention_mask=mask)
+                top_vec = top_vec.last_hidden_state
             else:
                 self.eval()
                 with torch.no_grad():
                     top_vec, _ = self.model(input_ids=x, token_type_ids=segs, attention_mask=mask)
         return top_vec
-
-
-# class HiWestSummarizer(nn.Module):
-#     def __init__(self, args, device, checkpoint):
-#         super(HiWestSummarizer, self).__init__()
-#         self.args = args
-#         self.device = device
-#         self.bert = Bert(args.large, args.temp_dir, args.finetune_bert,
-#                          args.other_bert)  # Modified: Add `args.other_bert`
-#         self.ext_layer = ExtTransformerEncoder(self.bert.model.config.hidden_size, args.ext_ff_size, args.ext_heads,
-#                                                args.ext_dropout, args.ext_layers)
-#         self.sent_encoder = SentEncoder(self.bert, self.ext_layer, args, device)
-#         self.doc_encoder = DocEncoder(self.bert, self.ext_layer, args, device)
-#
-#          # self.ext_layer = self.bert.model.transformer 
-#
-#         if (args.encoder == 'baseline'):
-#             bert_config = BertConfig(self.bert.model.config.vocab_size, hidden_size=args.ext_hidden_size,
-#                                      num_hidden_layers=args.ext_layers, num_attention_heads=args.ext_heads,
-#                                      intermediate_size=args.ext_ff_size)
-#             self.bert.model = BertModel(bert_config)
-#             self.ext_layer = Classifier(self.bert.model.config.hidden_size)
-#
-#         if (args.max_pos > 512):
-#             my_pos_embeddings = nn.Embedding(args.max_pos, self.bert.model.config.hidden_size)
-#             my_pos_embeddings.weight.data[:512] = self.bert.model.embeddings.position_embeddings.weight.data
-#             my_pos_embeddings.weight.data[512:] = self.bert.model.embeddings.position_embeddings.weight.data[-1][None,
-#                                                   :].repeat(args.max_pos - 512, 1)
-#             self.bert.model.embeddings.position_embeddings = my_pos_embeddings
-#
-#         if checkpoint is not None:
-#             self.load_state_dict(checkpoint['model'], strict=True)
-#         else:
-#             if args.param_init != 0.0:
-#                 for p in self.ext_layer.parameters():
-#                     p.data.uniform_(-args.param_init, args.param_init)
-#             if args.param_init_glorot:
-#                 for p in self.ext_layer.parameters():
-#                     if p.dim() > 1:
-#                         xavier_uniform_(p)
-#
-#         self.to(device)
-#
-#     def forward(self, src, segs, clss, mask_src, mask_cls):
-#         sent_scores, mask_cls = self.sent_encoder(src, segs, clss, mask_src, mask_cls)
-#         if self.args.architecture == 'bertsum':
-#             return sent_scores, mask_cls
-#         else:
-#             doc_scores = self.doc_encoder(sent_scores, segs, mask_cls)
-#             scores = torch.clamp_max(((sent_scores + doc_scores) / 2), max=1.0)
-#             return scores, mask_cls
 
 
 class HiWestSummarizer(nn.Module):
@@ -209,9 +163,11 @@ class HiWestSummarizer(nn.Module):
         self.device = device
         self.bert = Bert(args.large, args.temp_dir, args.finetune_bert, args.other_bert) # Modified: Add `args.other_bert`
         # Modification: Use same transformer for weight-sharing purpose
-        self.transformer = self.bert.model.transformer
-        self.ext_layer = ExtTransformerEncoder(self.transformer, self.bert.model.config.hidden_size, args.ext_ff_size, args.ext_heads,
-                                               args.ext_dropout, args.ext_layers) # Added transformer as args
+        if args.other_bert == 'distilbert':
+            self.transformer = self.bert.model.transformer
+        else:
+            self.transformer = self.bert.model.encoder  # For BERT, ALBERT, etc.
+        self.ext_layer = ExtTransformerEncoder(self.transformer, args.other_bert, self.bert.model.config.hidden_size, args.ext_dropout, args.ext_layers) # Added transformer as args
         # END OF MODIFICATION
 
         if (args.encoder == 'baseline'):

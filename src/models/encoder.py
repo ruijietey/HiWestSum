@@ -70,12 +70,17 @@ class TransformerEncoderLayer(nn.Module):
 
 
 class ExtTransformerEncoder(nn.Module):
-    def __init__(self, transformer, d_model, d_ff, heads, dropout, num_inter_layers=0 ):
+    def __init__(self, transformer, bert_used, d_model, dropout, num_inter_layers=0 ):
         super(ExtTransformerEncoder, self).__init__()
         self.d_model = d_model
         self.num_inter_layers = num_inter_layers
         self.pos_emb = PositionalEncoding(dropout, d_model)
-        self.transformer_inter = transformer.layer
+        self.transformer = transformer
+        self.bert_used = bert_used
+        if bert_used == 'distilbert':
+            self.transformer_inter = transformer.layer
+        elif bert_used == 'albert':
+            self.transformer_inter = transformer.albert_layer_groups
         # self.transformer_inter = nn.ModuleList(
         #     [TransformerEncoderLayer(d_model, heads, d_ff, dropout)
         #      for _ in range(num_inter_layers)])
@@ -84,7 +89,7 @@ class ExtTransformerEncoder(nn.Module):
         self.wo = nn.Linear(d_model, 1, bias=True)
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self, top_vecs, mask):
+    def forward(self, top_vecs, mask, head_mask=None):
         """ See :obj:`EncoderBase.forward()`"""
 
         batch_size, n_sents = top_vecs.size(0), top_vecs.size(1)
@@ -92,9 +97,19 @@ class ExtTransformerEncoder(nn.Module):
         x = top_vecs * mask[:, :, None].float()
         x = x + pos_emb
 
-        for i in range(self.num_inter_layers):
-            x, = self.transformer_inter[i](x, mask)  # all_sents * max_tokens * dim (Modified Masking for Pytorch above v1.2)
-            # x = self.transformer_inter[i](i, x, x, 1 - mask)  # all_sents * max_tokens * dim
+        if self.bert_used == 'distilbert':
+            for i in range(self.transformer.n_layers):
+                x, = self.transformer_inter[i](x, mask)  # all_sents * max_tokens * dim (Modified Masking for Pytorch above v1.2)
+        elif self.bert_used == 'albert':
+            head_mask = [None] * self.transformer.config.num_hidden_layers if head_mask is None else head_mask
+            for i in range(self.transformer.config.num_hidden_layers):
+                layers_per_group = int(self.transformer.config.num_hidden_layers / self.transformer.config.num_hidden_groups)
+                group_idx = int(i / (self.transformer.config.num_hidden_layers / self.transformer.config.num_hidden_groups))
+                # Attention mask below follows albert model way of extension
+                extended_attention_mask = mask.unsqueeze(1).unsqueeze(2)
+                extended_attention_mask = extended_attention_mask.to(dtype=torch.float32)  # fp16 compatibility
+                extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
+                x, = self.transformer_inter[group_idx](x, extended_attention_mask, head_mask[group_idx * layers_per_group : (group_idx + 1) * layers_per_group],)
 
         x = self.layer_norm(x)
         sent_scores = self.sigmoid(self.wo(x))
