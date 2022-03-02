@@ -93,7 +93,7 @@ if __name__ == '__main__':
     parser.add_argument("-accum_count", default=1, type=int)
     parser.add_argument("-report_every", default=1, type=int)
     parser.add_argument("-train_steps", default=1000, type=int)
-    parser.add_argument("-recall_eval", type=str2bool, nargs='?',const=True,default=False)
+    parser.add_argument("-recall_eval", type=str2bool, nargs='?', const=True, default=False)
 
 
     parser.add_argument('-visible_gpus', default='-1', type=str)
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     parser.add_argument('-log_file', default='../logs/cnndm.log')
     parser.add_argument('-seed', default=666, type=int)
 
-    parser.add_argument("-test_all", type=str2bool, nargs='?',const=True,default=False)
+    parser.add_argument("-test_all", type=str2bool, nargs='?', const=True, default=False)
     parser.add_argument("-test_from", default='')
     parser.add_argument("-test_start_from", default=-1, type=int)
 

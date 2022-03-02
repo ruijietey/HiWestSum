@@ -101,17 +101,6 @@ def build_optim_dec(args, model, checkpoint):
     return optim
 
 
-def get_generator(vocab_size, dec_hidden_size, device):
-    gen_func = nn.LogSoftmax(dim=-1)
-    generator = nn.Sequential(
-        nn.Linear(dec_hidden_size, vocab_size),
-        gen_func
-    )
-    generator.to(device)
-
-    return generator
-
-
 class Bert(nn.Module):
     def __init__(self, large, temp_dir, finetune=False, other_bert=None):
         super(Bert, self).__init__()
@@ -123,7 +112,7 @@ class Bert(nn.Module):
         elif other_bert == 'distilbert':
             self.model = DistilBertModel.from_pretrained('distilbert-base-uncased', cache_dir=temp_dir)
         elif other_bert == 'albert':
-            self.model = AlbertModel.from_pretrained('albert-base-v2', cache_dir=temp_dir)
+            self.model = AlbertModel.from_pretrained('albert-base-v2')
         ### End Modifying ###
 
         else:
@@ -144,11 +133,9 @@ class Bert(nn.Module):
         ### End Modifying ###
 
         else:
-            if self.finetune and self.other_bert == 'distilbert':
-                top_vec, _ = self.model(input_ids=x, token_type_ids=segs, attention_mask=mask)
-            elif self.finetune and self.other_bert == 'albert':
-                top_vec = self.model(input_ids=x, token_type_ids=segs, attention_mask=mask)
-                top_vec = top_vec.last_hidden_state
+            if self.finetune and self.other_bert == 'albert':
+                top_vec = self.model(input_ids=x, token_type_ids=segs, attention_mask=mask)[0]
+                # top_vec = top_vec.last_hidden_state
             else:
                 self.eval()
                 with torch.no_grad():
@@ -165,9 +152,15 @@ class HiWestSummarizer(nn.Module):
         # Modification: Use same transformer for weight-sharing purpose
         if args.other_bert == 'distilbert':
             self.transformer = self.bert.model.transformer
+            self.ext_layer = ExtTransformerEncoder(self.transformer, args.other_bert,
+                                                   self.bert.model.config.hidden_size, args.ext_dropout,
+                                                   args.ext_layers)  # Added transformer as args
         else:
             self.transformer = self.bert.model.encoder  # For BERT, ALBERT, etc.
-        self.ext_layer = ExtTransformerEncoder(self.transformer, args.other_bert, self.bert.model.config.hidden_size, args.ext_dropout, args.ext_layers) # Added transformer as args
+            self.ext_layer = ExtTransformerEncoder(self.transformer, args.other_bert,
+                                                   self.bert.model.config.hidden_size, args.ext_dropout,
+                                                   args.ext_layers)  # Added transformer as args
+
         # END OF MODIFICATION
 
         if (args.encoder == 'baseline'):

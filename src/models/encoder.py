@@ -109,7 +109,8 @@ class ExtTransformerEncoder(nn.Module):
                 extended_attention_mask = mask.unsqueeze(1).unsqueeze(2)
                 extended_attention_mask = extended_attention_mask.to(dtype=torch.float32)  # fp16 compatibility
                 extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
-                x, = self.transformer_inter[group_idx](x, extended_attention_mask, head_mask[group_idx * layers_per_group : (group_idx + 1) * layers_per_group],)
+                layer_group_output = self.transformer_inter[group_idx](x, extended_attention_mask, head_mask[group_idx * layers_per_group : (group_idx + 1) * layers_per_group])
+                x = layer_group_output[0]
 
         x = self.layer_norm(x)
         sent_scores = self.sigmoid(self.wo(x))

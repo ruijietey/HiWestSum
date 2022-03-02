@@ -15,12 +15,16 @@ from multiprocess import Pool
 
 from others.logging import logger
 from others.tokenization import BertTokenizer
+from transformers import DistilBertTokenizer, AlbertTokenizer
 from pytorch_transformers import XLNetTokenizer
 
 from others.utils import clean
 from prepro.utils import _get_word_ngrams
 
 import xml.etree.ElementTree as ET
+
+from collections import OrderedDict
+import sentencepiece as spm
 
 nyt_remove_words = ["photo", "graph", "chart", "map", "table", "drawing"]
 
@@ -35,7 +39,7 @@ def load_json(p, lower):
     source = []
     tgt = []
     flag = False
-    for sent in json.load(open(p))['sentences']:
+    for sent in json.load(open(p, encoding="utf8"))['sentences']:
         tokens = [t['word'] for t in sent['tokens']]
         if (lower):
             tokens = [t.lower() for t in tokens]
@@ -207,8 +211,16 @@ def hashhex(s):
 class BertData():
     def __init__(self, args):
         self.args = args
-        self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
-
+        if args.pretrained_model == 'distilbert':
+            self.tokenizer = BertTokenizer.from_pretrained('distilbert-base-uncased', do_lower_case=True)
+        elif args.pretrained_model == 'albert':
+            sp = spm.SentencePieceProcessor()
+            vocab = OrderedDict()
+            vocab = [[sp.id_to_piece(id), id] for id in range(sp.get_piece_size())]
+            self.tokenizer = BertTokenizer.from_pretrained('albert-base-v2', do_lower_case=True)
+            self.tokenizer.vocab = vocab
+        else:
+            self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
         self.sep_token = '[SEP]'
         self.cls_token = '[CLS]'
         self.pad_token = '[PAD]'
@@ -292,16 +304,22 @@ def format_to_bert(args):
 
 
 def _format_to_bert(params):
+    print("Formatting pt files...")
     corpus_type, json_file, args, save_file = params
+    print(f'JSON FILE: {json_file}')
+    print(f'TYPE: {corpus_type}')
+    print(f'SAVE FILE: {save_file}')
     is_test = corpus_type == 'test'
     if (os.path.exists(save_file)):
+        print(f'Ignore %s {save_file}')
         logger.info('Ignore %s' % save_file)
         return
 
     bert = BertData(args)
-
+    print('Processing %s' % json_file)
     logger.info('Processing %s' % json_file)
     jobs = json.load(open(json_file))
+    print(f'JOBS: {jobs}')
     datasets = []
     for d in jobs:
         source, tgt = d['src'], d['tgt']
@@ -329,15 +347,17 @@ def _format_to_bert(params):
 
 
 def format_to_lines(args):
+    print("Starting...")
     corpus_mapping = {}
     for corpus_type in ['valid', 'test', 'train']:
         temp = []
         for line in open(pjoin(args.map_path, 'mapping_' + corpus_type + '.txt')):
             temp.append(hashhex(line.strip()))
         corpus_mapping[corpus_type] = {key.strip(): 1 for key in temp}
+        # print(corpus_mapping[corpus_type])
     train_files, valid_files, test_files = [], [], []
     for f in glob.glob(pjoin(args.raw_path, '*.json')):
-        real_name = f.split('/')[-1].split('.')[0]
+        real_name = f.split('\\')[-1].split('.')[0]
         if (real_name in corpus_mapping['valid']):
             valid_files.append(f)
         elif (real_name in corpus_mapping['test']):
@@ -350,14 +370,17 @@ def format_to_lines(args):
     corpora = {'train': train_files, 'valid': valid_files, 'test': test_files}
     for corpus_type in ['train', 'valid', 'test']:
         a_lst = [(f, args) for f in corpora[corpus_type]]
+
         pool = Pool(args.n_cpus)
         dataset = []
         p_ct = 0
         for d in pool.imap_unordered(_format_to_lines, a_lst):
             dataset.append(d)
+
             if (len(dataset) > args.shard_size):
                 pt_file = "{:s}.{:s}.{:d}.json".format(args.save_path, corpus_type, p_ct)
                 with open(pt_file, 'w') as save:
+                    print("Saving...")
                     # save.write('\n'.join(dataset))
                     save.write(json.dumps(dataset))
                     p_ct += 1
@@ -367,6 +390,8 @@ def format_to_lines(args):
         pool.join()
         if (len(dataset) > 0):
             pt_file = "{:s}.{:s}.{:d}.json".format(args.save_path, corpus_type, p_ct)
+            print("Saving...")
+            print(pt_file)
             with open(pt_file, 'w') as save:
                 # save.write('\n'.join(dataset))
                 save.write(json.dumps(dataset))
