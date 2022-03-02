@@ -5,8 +5,8 @@ import torch.nn as nn
 from transformers import BertConfig, BertModel, DistilBertConfig, DistilBertModel, AlbertModel, AlbertConfig
 from torch.nn.init import xavier_uniform_
 
-from encoder import Classifier, ExtTransformerEncoder
-from optimizers import Optimizer
+from models.encoder import Classifier, ExtTransformerEncoder
+from models.optimizers import Optimizer
 
 def build_optim(args, model, checkpoint):
     """ Build optimizer """

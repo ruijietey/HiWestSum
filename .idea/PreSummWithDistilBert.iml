@@ -6,10 +6,11 @@
       <excludeFolder url="file://$MODULE_DIR$/mobile" />
       <excludeFolder url="file://$MODULE_DIR$/merged_less_tokenized" />
       <excludeFolder url="file://$MODULE_DIR$/merged_stories_tokenized" />
-      <excludeFolder url="file://$MODULE_DIR$/json_data" />
       <excludeFolder url="file://$MODULE_DIR$/albert_data" />
+      <excludeFolder url="file://$MODULE_DIR$/bert.pt_data" />
+      <excludeFolder url="file://$MODULE_DIR$/json_data" />
     </content>
-    <orderEntry type="jdk" jdkName="Remote Python 3.6.9 (sftp://s121md102_06@mdeep02.dynip.ntu.edu.sg:22/home/students/s121md102_06/bertsum_experiment/PreSummWithMobileBert/myEnv/bin/python)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Remote Python 3.6.9 (sftp://s121md102_06@mdeep02.dynip.ntu.edu.sg:22/home/students/s121md102_06/bertsum_experiment/PreSummWithMobileBert/myEnv/bin/python) (3)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>
