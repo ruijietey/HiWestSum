@@ -4,3 +4,7 @@ mobile
 .json
 .story
 .pt
+/albert_data/
+/json_data/
+/merged_less_tokenized/
+/merged_stories_tokenized/
