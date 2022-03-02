@@ -5,8 +5,8 @@ import torch.nn as nn
 from transformers import BertConfig, BertModel, DistilBertConfig, DistilBertModel, AlbertModel, AlbertConfig
 from torch.nn.init import xavier_uniform_
 
-from models.encoder import Classifier, ExtTransformerEncoder
-from models.optimizers import Optimizer
+from encoder import Classifier, ExtTransformerEncoder
+from optimizers import Optimizer
 
 def build_optim(args, model, checkpoint):
     """ Build optimizer """
@@ -139,7 +139,8 @@ class Bert(nn.Module):
             else:
                 self.eval()
                 with torch.no_grad():
-                    top_vec, _ = self.model(input_ids=x, token_type_ids=segs, attention_mask=mask)
+                    # top_vec, _ = self.model(input_ids=x, token_type_ids=segs, attention_mask=mask)
+                    top_vec = self.model(input_ids=x, token_type_ids=segs, attention_mask=mask)
         return top_vec
 
 

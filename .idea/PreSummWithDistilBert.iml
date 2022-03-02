@@ -9,7 +9,7 @@
       <excludeFolder url="file://$MODULE_DIR$/json_data" />
       <excludeFolder url="file://$MODULE_DIR$/albert_data" />
     </content>
-    <orderEntry type="jdk" jdkName="Remote Python 2.7.17 (sftp://s121md102_06@mdeep02.dynip.ntu.edu.sg:22/usr/bin/python)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Remote Python 3.6.9 (sftp://s121md102_06@mdeep02.dynip.ntu.edu.sg:22/home/students/s121md102_06/bertsum_experiment/PreSummWithMobileBert/myEnv/bin/python)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>
