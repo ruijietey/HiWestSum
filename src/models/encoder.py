@@ -54,15 +54,15 @@ class RelHierarchicalLayer(nn.Module):
                  **kwargs):
         super(RelHierarchicalLayer, self).__init__()
 
-        self.dec_attn = RelLearnableMultiHeadAttn(n_head, d_model, d_head, dropout,
+        self.hi_attn = RelLearnableMultiHeadAttn(n_head, d_model, d_head, dropout,
                                          **kwargs)
         self.pos_ff = RelPositionwiseFF(d_model, d_inner, dropout,
                                      pre_lnorm=kwargs.get('pre_lnorm'))
 
-    def forward(self, dec_inp, r_emb, r_w_bias, r_bias, dec_attn_mask=None, mems=None):
+    def forward(self, doc_inp, sent_emb, sent_w_bias, sent_bias, doc_attn_mask=None, mems=None):
 
-        output = self.dec_attn(dec_inp, r_emb, r_w_bias, r_bias,
-                               attn_mask=dec_attn_mask,
+        output = self.hi_attn(doc_inp, sent_emb, sent_w_bias, sent_bias,
+                               attn_mask=doc_attn_mask,
                                mems=mems)
         output = self.pos_ff(output)
 
@@ -168,11 +168,12 @@ class TransformerEncoderLayer(nn.Module):
 
 
 class ExtLayer(nn.Module):
-    def __init__(self, transformer, bert_used, d_model, d_ff, heads, dropout, num_inter_layers=0, doc_weight = 0.8, extra_attention = False):
+    def __init__(self, transformer, bert_used, d_model, d_ff, heads, dropout, num_inter_layers=0, doc_weight=0.8, extra_attention=False):
         super(ExtLayer, self).__init__()
         self.d_model = d_model
         self.num_inter_layers = num_inter_layers
-        if extra_attention:
+        self.extra_attention = extra_attention
+        if self.extra_attention:
             self.extra_attention = True
             self.global_attention = RelativeGlobalAttention(dropout, d_model, heads)
         self.pos_emb = PositionalEncoding(dropout, d_model)
