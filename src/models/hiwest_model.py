@@ -5,7 +5,7 @@ import torch.nn as nn
 from transformers import BertConfig, BertModel, DistilBertConfig, DistilBertModel, AlbertModel, AlbertConfig
 from torch.nn.init import xavier_uniform_
 
-from models.encoder import Classifier, ExtTransformerEncoder
+from models.encoder import Classifier, ExtTransformerEncoder, ExtLayer
 from models.optimizers import Optimizer
 
 def build_optim(args, model, checkpoint):
@@ -126,6 +126,7 @@ class Bert(nn.Module):
         if self.other_bert == 'distilbert':
             if(self.finetune):
                 top_vec = self.model(input_ids=x, attention_mask=mask)[0]
+
             else:
                 self.eval()
                 with torch.no_grad():
@@ -139,8 +140,8 @@ class Bert(nn.Module):
             else:
                 self.eval()
                 with torch.no_grad():
-                    # top_vec, _ = self.model(input_ids=x, token_type_ids=segs, attention_mask=mask)
-                    top_vec = self.model(input_ids=x, token_type_ids=segs, attention_mask=mask)
+                    top_vec, _ = self.model(input_ids=x, token_type_ids=segs, attention_mask=mask)
+
         return top_vec
 
 
@@ -153,14 +154,14 @@ class HiWestSummarizer(nn.Module):
         # Modification: Use same transformer for weight-sharing purpose
         if args.other_bert == 'distilbert':
             self.transformer = self.bert.model.transformer
-            self.ext_layer = ExtTransformerEncoder(self.transformer, args.other_bert, self.bert.model.config.hidden_size,
+            self.ext_layer = ExtLayer(self.transformer, args.other_bert, self.bert.model.config.hidden_size,
                                                    args.ext_ff_size, args.ext_heads, args.ext_dropout,
-                                                   args.ext_layers)  # Added transformer as args
+                                                   args.ext_layers, args.doc_weight, args.extra_attention)  # Added doc weight, layers
         else:
             self.transformer = self.bert.model.encoder  # For BERT, ALBERT, etc.
-            self.ext_layer = ExtTransformerEncoder(self.transformer, args.other_bert, self.bert.model.config.hidden_size,
-                                                   args.ext_ff_size, args.ext_heads, args.ext_dropout,
-                                                   args.ext_layers)  # Added transformer as args
+            ExtLayer(self.transformer, args.other_bert, self.bert.model.config.hidden_size,
+                     args.ext_ff_size, args.ext_heads, args.ext_dropout,
+                     args.ext_layers, args.doc_weight, args.extra_attention)  # Added doc weight, layers
 
         # END OF MODIFICATION
 
@@ -191,7 +192,9 @@ class HiWestSummarizer(nn.Module):
         self.to(device)
 
     def forward(self, src, segs, clss, mask_src, mask_cls):
+        # top_vec, cls_vec = self.bert(src, segs, mask_src)
         top_vec = self.bert(src, segs, mask_src)
+        cls_vec = top_vec[:, 0, :].unsqueeze(1)
         sents_vec = top_vec[torch.arange(top_vec.size(0)).unsqueeze(1), clss]
         sents_vec = sents_vec * mask_cls[:, :, None].float()
         sent_scores = self.ext_layer(sents_vec, mask_cls).squeeze(-1)
@@ -204,11 +207,8 @@ class ExtSummarizer(nn.Module):
         self.args = args
         self.device = device
         self.bert = Bert(args.large, args.temp_dir, args.finetune_bert, args.other_bert) # Modified: Add `args.other_bert`
-        if args.other_bert == 'distilbert':
-            self.transformer = self.bert.model.transformer
-        else:
-            self.transformer = self.bert.model.encoder
-        self.ext_layer = ExtTransformerEncoder(self.transformer, args.other_bert, self.bert.model.config.hidden_size, args.ext_ff_size, args.ext_heads,
+
+        self.ext_layer = ExtTransformerEncoder(self.bert.model.config.hidden_size, args.ext_ff_size, args.ext_heads,
                                                args.ext_dropout, args.ext_layers)
 
         if (args.encoder == 'baseline'):

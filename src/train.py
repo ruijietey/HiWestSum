@@ -112,6 +112,8 @@ if __name__ == '__main__':
     # START MODIFICATION
     parser.add_argument("-other_bert", default="distilbert", type=str)
     parser.add_argument("-architecture", default='bertsum', type=str, choices=['bertsum', 'hiwest'])
+    parser.add_argument("-doc_weight", default=0.8, type=float)
+    parser.add_argument("-extra_attention", default=True, type=bool)
     # END MODIFICATION
 
     args = parser.parse_args()

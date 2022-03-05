@@ -2,8 +2,9 @@ import math
 
 import torch
 import torch.nn as nn
-
+import torch.nn.functional as F
 from models.neural import MultiHeadedAttention, PositionwiseFeedForward
+
 
 class Classifier(nn.Module):
     def __init__(self, hidden_size):
@@ -46,6 +47,84 @@ class PositionalEncoding(nn.Module):
         return self.pe[:, :emb.size(1)]
 
 
+# Modified Global Attention
+class RelativeGlobalAttention(nn.Module):
+    def __init__(self, dropout, d_model, num_heads, max_len=1024):
+        super().__init__()
+        d_head, remainder = divmod(d_model, num_heads)
+        if remainder:
+            raise ValueError(
+                "incompatible `d_model` and `num_heads`"
+            )
+        self.max_len = max_len
+        self.d_model = d_model
+        self.num_heads = num_heads
+        self.key = nn.Linear(d_model, d_model)
+        self.value = nn.Linear(d_model, d_model)
+        self.query = nn.Linear(d_model, d_model)
+        self.dropout = nn.Dropout(dropout)
+        self.Er = nn.Parameter(torch.randn(max_len, d_head))
+        self.register_buffer(
+            "mask",
+            torch.tril(torch.ones(max_len, max_len))
+                .unsqueeze(0).unsqueeze(0)
+        )
+        # self.mask.shape = (1, 1, max_len, max_len)
+
+    def forward(self, x):
+        # x.shape == (batch_size, seq_len, d_model)
+        batch_size, seq_len, _ = x.shape
+
+        if seq_len > self.max_len:
+            raise ValueError(
+                "sequence length exceeds model capacity"
+            )
+
+        k_t = self.key(x).reshape(batch_size, seq_len, self.num_heads, -1).permute(0, 2, 3, 1)
+        # k_t.shape = (batch_size, num_heads, d_head, seq_len)
+        v = self.value(x).reshape(batch_size, seq_len, self.num_heads, -1).transpose(1, 2)
+        q = self.query(x).reshape(batch_size, seq_len, self.num_heads, -1).transpose(1, 2)
+        # shape = (batch_size, num_heads, seq_len, d_head)
+
+        start = self.max_len - seq_len
+        Er_t = self.Er[start:, :].transpose(0, 1)
+        # Er_t.shape = (d_head, seq_len)
+        QEr = torch.matmul(q, Er_t)
+        # QEr.shape = (batch_size, num_heads, seq_len, seq_len)
+        Srel = self.skew(QEr)
+        # Srel.shape = (batch_size, num_heads, seq_len, seq_len)
+
+        QK_t = torch.matmul(q, k_t)
+        # QK_t.shape = (batch_size, num_heads, seq_len, seq_len)
+        attn = (QK_t + Srel) / math.sqrt(q.size(-1))
+        mask = self.mask[:, :, :seq_len, :seq_len]
+        # mask.shape = (1, 1, seq_len, seq_len)
+        attn = attn.masked_fill(mask == 0, float("-inf"))
+        # attn.shape = (batch_size, num_heads, seq_len, seq_len)
+        attn = F.softmax(attn, dim=-1)
+        out = torch.matmul(attn, v)
+        # out.shape = (batch_size, num_heads, seq_len, d_head)
+        out = out.transpose(1, 2)
+        # out.shape == (batch_size, seq_len, num_heads, d_head)
+        out = out.reshape(batch_size, seq_len, -1)
+        # out.shape == (batch_size, seq_len, d_model)
+        return self.dropout(out)
+
+    def skew(self, QEr):
+        # QEr.shape = (batch_size, num_heads, seq_len, seq_len)
+        padded = F.pad(QEr, (1, 0))
+        # padded.shape = (batch_size, num_heads, seq_len, 1 + seq_len)
+        batch_size, num_heads, num_rows, num_cols = padded.shape
+        reshaped = padded.reshape(batch_size, num_heads, num_cols, num_rows)
+        # reshaped.size = (batch_size, num_heads, 1 + seq_len, seq_len)
+        Srel = reshaped[:, :, 1:, :]
+        # Srel.shape = (batch_size, num_heads, seq_len, seq_len)
+        return Srel
+
+
+# End Modification
+
+
 class TransformerEncoderLayer(nn.Module):
     def __init__(self, d_model, heads, d_ff, dropout):
         super(TransformerEncoderLayer, self).__init__()
@@ -69,14 +148,18 @@ class TransformerEncoderLayer(nn.Module):
         return self.feed_forward(out)
 
 
-class ExtTransformerEncoder(nn.Module):
-    def __init__(self, transformer, bert_used, d_model, d_ff, heads, dropout, num_inter_layers=0 ):
-        super(ExtTransformerEncoder, self).__init__()
+class ExtLayer(nn.Module):
+    def __init__(self, transformer, bert_used, d_model, d_ff, heads, dropout, num_inter_layers=0, doc_weight = 0.8, extra_attention = False):
+        super(ExtLayer, self).__init__()
         self.d_model = d_model
         self.num_inter_layers = num_inter_layers
+        if extra_attention:
+            self.extra_attention = True
+            self.global_attention = RelativeGlobalAttention(dropout, d_model, heads)
         self.pos_emb = PositionalEncoding(dropout, d_model)
         self.transformer = transformer
         self.bert_used = bert_used
+        self.doc_weight = doc_weight
         if bert_used == 'distilbert':
             self.transformer_inter = transformer.layer
         elif bert_used == 'albert':
@@ -99,8 +182,10 @@ class ExtTransformerEncoder(nn.Module):
         x = x + pos_emb
 
         if self.bert_used == 'distilbert':
-            for i in range(self.transformer.n_layers):
-                x, = self.transformer_inter[i](x, mask)  # all_sents * max_tokens * dim (Modified Masking for Pytorch above v1.2)
+            head_mask = [None] * self.transformer.n_layers if head_mask is None else head_mask
+            x, = self.transformer(x, mask, head_mask) # Doc level representation
+            # for i in range(self.transformer.n_layers):
+            #     x, = self.transformer_inter[i](x, mask)  # all_sents * max_tokens * dim (Modified Masking for Pytorch above v1.2)
         elif self.bert_used == 'albert':
             head_mask = [None] * self.transformer.config.num_hidden_layers if head_mask is None else head_mask
             for i in range(self.transformer.config.num_hidden_layers):
@@ -113,12 +198,46 @@ class ExtTransformerEncoder(nn.Module):
                 layer_group_output = self.transformer_inter[group_idx](x, extended_attention_mask, head_mask[group_idx * layers_per_group : (group_idx + 1) * layers_per_group])
                 x = layer_group_output[0]
 
+        x = (1-self.doc_weight)*x + (self.doc_weight)*top_vecs
+        if self.extra_attention == True:
+            x = self.global_attention(x)
         x = self.layer_norm(x)
         sent_scores = self.sigmoid(self.wo(x))
         sent_scores = sent_scores.squeeze(-1) * mask.float()
 
         return sent_scores
 
+
+class ExtTransformerEncoder(nn.Module):
+    def __init__(self, d_model, d_ff, heads, dropout, num_inter_layers=0):
+        super(ExtTransformerEncoder, self).__init__()
+        self.d_model = d_model
+        self.num_inter_layers = num_inter_layers
+        self.pos_emb = PositionalEncoding(dropout, d_model)
+        self.transformer_inter = nn.ModuleList(
+            [TransformerEncoderLayer(d_model, heads, d_ff, dropout)
+             for _ in range(num_inter_layers)])
+        self.dropout = nn.Dropout(dropout)
+        self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
+        self.wo = nn.Linear(d_model, 1, bias=True)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, top_vecs, mask):
+        """ See :obj:`EncoderBase.forward()`"""
+
+        batch_size, n_sents = top_vecs.size(0), top_vecs.size(1)
+        pos_emb = self.pos_emb.pe[:, :n_sents]
+        x = top_vecs * mask[:, :, None].float()
+        x = x + pos_emb
+
+        for i in range(self.num_inter_layers):
+            x = self.transformer_inter[i](i, x, x, 1 - mask)  # all_sents * max_tokens * dim
+
+        x = self.layer_norm(x)
+        sent_scores = self.sigmoid(self.wo(x))
+        sent_scores = sent_scores.squeeze(-1) * mask.float()
+
+        return sent_scores
 
 # class SentEncoder(nn.Module):
 #     def __init__(self, bert, ext_layer, args, device):
