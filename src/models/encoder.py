@@ -3,7 +3,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from models.neural import MultiHeadedAttention, PositionwiseFeedForward
+from models.neural import MultiHeadedAttention, PositionwiseFeedForward, RelLearnableMultiHeadAttn, RelPositionwiseFF
 
 
 class Classifier(nn.Module):
@@ -47,7 +47,28 @@ class PositionalEncoding(nn.Module):
         return self.pe[:, :emb.size(1)]
 
 
-# Modified Global Attention
+# Added Relative Global Attention
+# Learnable Hierarchical Layer is from Transformer-XL: Class RelLearnableDecoderLayer
+class RelHierarchicalLayer(nn.Module):
+    def __init__(self, n_head, d_model, d_head, d_inner, dropout,
+                 **kwargs):
+        super(RelHierarchicalLayer, self).__init__()
+
+        self.dec_attn = RelLearnableMultiHeadAttn(n_head, d_model, d_head, dropout,
+                                         **kwargs)
+        self.pos_ff = RelPositionwiseFF(d_model, d_inner, dropout,
+                                     pre_lnorm=kwargs.get('pre_lnorm'))
+
+    def forward(self, dec_inp, r_emb, r_w_bias, r_bias, dec_attn_mask=None, mems=None):
+
+        output = self.dec_attn(dec_inp, r_emb, r_w_bias, r_bias,
+                               attn_mask=dec_attn_mask,
+                               mems=mems)
+        output = self.pos_ff(output)
+
+        return output
+
+
 class RelativeGlobalAttention(nn.Module):
     def __init__(self, dropout, d_model, num_heads, max_len=1024):
         super().__init__()
@@ -120,8 +141,6 @@ class RelativeGlobalAttention(nn.Module):
         Srel = reshaped[:, :, 1:, :]
         # Srel.shape = (batch_size, num_heads, seq_len, seq_len)
         return Srel
-
-
 # End Modification
 
 
