@@ -34,7 +34,7 @@ PRETRAINED_VOCAB_ARCHIVE_MAP = {
     'bert-base-multilingual-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-multilingual-uncased-vocab.txt",
     'bert-base-multilingual-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-multilingual-cased-vocab.txt",
     'bert-base-chinese': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-chinese-vocab.txt",
-    'albert-base-v2': "https://s3.amazonaws.com/models.huggingface.co/albert/albert-base-v2.txt",
+    "albert-base-v2": "https://huggingface.co/albert-base-v2/resolve/main/spiece.model",
     'distilbert-base-uncased': "https://s3.amazonaws.com/models.huggingface.co/distilbert/distilbert-base-uncased.txt",
 }
 PRETRAINED_VOCAB_POSITIONAL_EMBEDDINGS_SIZE_MAP = {

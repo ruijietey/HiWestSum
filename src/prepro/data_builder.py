@@ -212,12 +212,12 @@ class BertData():
     def __init__(self, args):
         self.args = args
         if args.pretrained_model == 'distilbert':
-            self.tokenizer = BertTokenizer.from_pretrained('distilbert-base-uncased', do_lower_case=True)
+            self.tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased', do_lower_case=True)
         elif args.pretrained_model == 'albert':
             sp = spm.SentencePieceProcessor()
             vocab = OrderedDict()
             vocab = [[sp.id_to_piece(id), id] for id in range(sp.get_piece_size())]
-            self.tokenizer = BertTokenizer.from_pretrained('albert-base-v2', do_lower_case=True)
+            self.tokenizer = AlbertTokenizer.from_pretrained('albert-base-v2', do_lower_case=True)
             self.tokenizer.vocab = vocab
         else:
             self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)

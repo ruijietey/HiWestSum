@@ -154,14 +154,12 @@ class HiWestSummarizer(nn.Module):
         # Modification: Use same transformer for weight-sharing purpose
         if args.other_bert == 'distilbert':
             self.transformer = self.bert.model.transformer
-            self.ext_layer = ExtLayer(self.transformer, args.other_bert, self.bert.model.config.hidden_size,
-                                                   args.ext_ff_size, args.ext_heads, args.ext_dropout,
-                                                   args.ext_layers, args.doc_weight, args.extra_attention)  # Added doc weight, layers
+
         else:
             self.transformer = self.bert.model.encoder  # For BERT, ALBERT, etc.
-            ExtLayer(self.transformer, args.other_bert, self.bert.model.config.hidden_size,
-                     args.ext_ff_size, args.ext_heads, args.ext_dropout,
-                     args.ext_layers, args.doc_weight, args.extra_attention)  # Added doc weight, layers
+        self.ext_layer = ExtLayer(self.transformer, args.other_bert, self.bert.model.config.hidden_size,
+                 args.ext_ff_size, args.ext_heads, args.ext_dropout,
+                 args.ext_layers, args.doc_weight, args.extra_attention)  # Added doc weight, layers
 
         # END OF MODIFICATION
 
