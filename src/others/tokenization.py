@@ -24,6 +24,8 @@ from io import open
 
 from pytorch_transformers import cached_path
 
+import sentencepiece as spm
+
 logger = logging.getLogger(__name__)
 
 PRETRAINED_VOCAB_ARCHIVE_MAP = {
@@ -86,13 +88,16 @@ class BertTokenizer(object):
                 "Can't find a vocabulary file at path '{}'. To load the vocabulary from a Google pretrained "
                 "model use `tokenizer = BertTokenizer.from_pretrained(PRETRAINED_MODEL_NAME)`".format(vocab_file))
         self.do_lower_case = do_lower_case
-        self.vocab = load_vocab(vocab_file)
+        vocab = {self.convert_ids_to_tokens(i): i for i in range(self.vocab_size)}
+        vocab.update(self.added_tokens_encoder)
+        self.vocab = vocab
         self.ids_to_tokens = collections.OrderedDict(
             [(ids, tok) for tok, ids in self.vocab.items()])
         self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case,
                                               never_split=never_split)
         self.wordpiece_tokenizer = WordpieceTokenizer(vocab=self.vocab)
         self.max_len = max_len if max_len is not None else int(1e12)
+
 
     def tokenize(self, text, use_bert_basic_tokenizer=False):
         split_tokens = []
@@ -135,10 +140,14 @@ class BertTokenizer(object):
         Instantiate a PreTrainedBertModel from a pre-trained model file.
         Download and cache the pre-trained model file if needed.
         """
+
         if pretrained_model_name_or_path in PRETRAINED_VOCAB_ARCHIVE_MAP:
             vocab_file = PRETRAINED_VOCAB_ARCHIVE_MAP[pretrained_model_name_or_path]
         else:
             vocab_file = pretrained_model_name_or_path
+        if pretrained_model_name_or_path == 'albert-base-v2':
+            sp_model = spm.SentencePieceProcessor()
+            sp_model.Load(vocab_file)
         if os.path.isdir(vocab_file):
             vocab_file = os.path.join(vocab_file, VOCAB_NAME)
         # redirect to the cache, if necessary
