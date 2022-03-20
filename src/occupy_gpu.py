@@ -9,7 +9,7 @@ import time
 cuda_devices = '1,2,3'
 
 # Memory needed
-block_mem = 8000
+block_mem = 10000
 
 # Time for reservation (in seconds)
 reserved_time = 360000

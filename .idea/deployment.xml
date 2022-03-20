@@ -7,6 +7,14 @@
           <mappings>
             <mapping deploy="/bertsum_experiment/PreSummWithMobileBert/" local="$PROJECT_DIR$" web="" />
           </mappings>
+          <excludedPaths>
+            <excludedPath path="/bertsum_experiment/PreSummWithMobileBert/json_data" />
+            <excludedPath path="/bertsum_experiment/PreSummWithMobileBert/bert_data" />
+            <excludedPath local="true" path="$PROJECT_DIR$/bert_data" />
+            <excludedPath local="true" path="$PROJECT_DIR$/json_data" />
+            <excludedPath local="true" path="$PROJECT_DIR$/merged_less_tokenized" />
+            <excludedPath local="true" path="$PROJECT_DIR$/merged_stories_tokenized" />
+          </excludedPaths>
         </serverdata>
       </paths>
       <paths name="s121md102_06@mdeep02.dynip.ntu.edu.sg:22 password">
@@ -14,6 +22,13 @@
           <mappings>
             <mapping deploy="/bertsum_experiment/PreSummWithMobileBert/" local="$PROJECT_DIR$" />
           </mappings>
+          <excludedPaths>
+            <excludedPath local="true" path="$PROJECT_DIR$/merged_less_tokenized" />
+            <excludedPath local="true" path="$PROJECT_DIR$/merged_stories_tokenized" />
+            <excludedPath local="true" path="$PROJECT_DIR$/json_data" />
+            <excludedPath local="true" path="$PROJECT_DIR$/bert.pt_data" />
+            <excludedPath local="true" path="$PROJECT_DIR$/albert_data" />
+          </excludedPaths>
         </serverdata>
       </paths>
       <paths name="s121md102_06@mdeep02.dynip.ntu.edu.sg:22 password (1)">
