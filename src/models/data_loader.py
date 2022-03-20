@@ -85,7 +85,7 @@ def load_dataset(args, corpus_type, shuffle):
         return dataset
 
     # Sort the glob output by file name (by increasing indexes).
-    pts = sorted(glob.glob(args.bert_data_path + '.' + corpus_type + '.[0-9]*.pt'))
+    pts = sorted(glob.glob(args.bert_data_path + '.' + corpus_type + '.[0-9]*'))
     if pts:
         if (shuffle):
             random.shuffle(pts)
@@ -188,11 +188,6 @@ class DataIterator(object):
             random.shuffle(self.dataset)
         xs = self.dataset
         return xs
-
-
-
-
-
 
     def preprocess(self, ex, is_test):
         src = ex['src']

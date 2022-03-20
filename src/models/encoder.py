@@ -218,7 +218,7 @@ class ExtLayer(nn.Module):
                 layer_group_output = self.transformer_inter[group_idx](x, extended_attention_mask, head_mask[group_idx * layers_per_group : (group_idx + 1) * layers_per_group])
                 x = layer_group_output[0]
 
-        x = (1-self.doc_weight)*x + (self.doc_weight)*top_vecs
+        x = (1-self.doc_weight)*top_vecs + (self.doc_weight)*x
         if self.extra_attention == True:
             x = self.global_attention(x)
         x = self.layer_norm(x)

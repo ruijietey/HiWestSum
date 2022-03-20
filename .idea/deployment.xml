@@ -10,7 +10,6 @@
           <excludedPaths>
             <excludedPath path="/bertsum_experiment/PreSummWithMobileBert/json_data" />
             <excludedPath path="/bertsum_experiment/PreSummWithMobileBert/bert_data" />
-            <excludedPath local="true" path="$PROJECT_DIR$/albert_data" />
             <excludedPath local="true" path="$PROJECT_DIR$/bert_data" />
             <excludedPath local="true" path="$PROJECT_DIR$/json_data" />
             <excludedPath local="true" path="$PROJECT_DIR$/merged_less_tokenized" />
