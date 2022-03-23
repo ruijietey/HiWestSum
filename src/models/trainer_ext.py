@@ -269,6 +269,8 @@ class Trainer(object):
                                 if (self.args.block_trigram):
                                     if (not _block_tri(candidate, _pred)):
                                         _pred.append(candidate)
+
+                                    # Can add a function to compare similarity of sentences, remove the one with lower score
                                 else:
                                     _pred.append(candidate)
 
@@ -417,3 +419,91 @@ class Trainer(object):
         """
         if self.model_saver is not None:
             self.model_saver.maybe_save(step)
+
+
+
+# MODIFIED ###########################
+def baseline_test(args, test_iter, cal_oracle=False, cal_lead=True):
+    """ Validate model.
+        valid_iter: validate data iterator
+    Returns:
+        :obj:`nmt.Statistics`: validation loss statistics
+    """
+
+    # Set model in validating mode.
+    def _get_ngrams(n, text):
+        ngram_set = set()
+        text_length = len(text)
+        max_index_ngram_start = text_length - n
+        for i in range(max_index_ngram_start + 1):
+            ngram_set.add(tuple(text[i:i + n]))
+        return ngram_set
+
+    def _block_tri(c, p):
+        tri_c = _get_ngrams(3, c.split())
+        for s in p:
+            tri_s = _get_ngrams(3, s.split())
+            if len(tri_c.intersection(tri_s)) > 0:
+                return True
+        return False
+
+    can_path = '%s.candidate.baseline' % (args.result_path)
+    gold_path = '%s.gold.baseline' % (args.result_path)
+    with open(can_path, 'w') as save_pred:
+        with open(gold_path, 'w') as save_gold:
+            with torch.no_grad():
+                for batch in test_iter:
+                    src = batch.src
+                    labels = batch.src_sent_labels
+                    segs = batch.segs
+                    clss = batch.clss
+                    mask = batch.mask_src
+                    mask_cls = batch.mask_cls
+
+                    gold = []
+                    pred = []
+
+                    if (cal_lead):
+                        selected_ids = [list(range(batch.clss.size(1)))] * batch.batch_size
+                    elif (cal_oracle):
+                        selected_ids = [[j for j in range(batch.clss.size(1)) if labels[i][j] == 1] for i in
+                                        range(batch.batch_size)]
+
+                    # selected_ids = np.sort(selected_ids,1)
+                    for i, idx in enumerate(selected_ids):
+                        _pred = []
+                        if (len(batch.src_str[i]) == 0):
+                            continue
+                        for j in selected_ids[i][:len(batch.src_str[i])]:
+                            if (j >= len(batch.src_str[i])):
+                                continue
+                            candidate = batch.src_str[i][j].strip()
+                            if (args.block_trigram):
+                                if (not _block_tri(candidate, _pred)):
+                                    _pred.append(candidate)
+
+                                # Can add a function to compare similarity of sentences, remove the one with lower score
+                            else:
+                                _pred.append(candidate)
+
+                            if ((not cal_oracle) and (not args.recall_eval) and len(_pred) == 3):
+                                break
+
+                        _pred = '<q>'.join(_pred)
+                        if (args.recall_eval):
+                            _pred = ' '.join(_pred.split()[:len(batch.tgt_str[i].split())])
+
+                        pred.append(_pred)
+                        gold.append(batch.tgt_str[i])
+
+                    for i in range(len(gold)):
+                        save_gold.write(gold[i].strip() + '\n')
+                    for i in range(len(pred)):
+                        save_pred.write(pred[i].strip() + '\n')
+    rouges = test_rouge(args.temp_dir, can_path, gold_path)
+    logger.info('Rouges for baseline is %d \n%s' % (rouge_results_to_str(rouges)))
+
+    return rouges
+
+
+# END OF MODIFICATION #####################

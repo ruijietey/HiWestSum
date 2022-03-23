@@ -2,7 +2,7 @@ import copy
 
 import torch
 import torch.nn as nn
-from transformers import BertConfig, BertModel, DistilBertConfig, DistilBertModel
+from transformers import BertConfig, BertModel, DistilBertConfig, DistilBertModel, AlbertModel, AlbertConfig
 from torch.nn.init import xavier_uniform_
 
 from models.decoder import TransformerDecoder

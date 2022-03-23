@@ -16,7 +16,6 @@ from multiprocess import Pool
 from others.logging import logger
 from others.tokenization import BertTokenizer
 from transformers import AlbertTokenizer
-from pytorch_transformers import XLNetTokenizer
 
 from others.utils import clean
 from prepro.utils import _get_word_ngrams

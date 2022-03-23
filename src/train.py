@@ -4,11 +4,12 @@
 """
 from __future__ import division
 
+import time
 import argparse
 import os
 from others.logging import init_logger
 # from train_abstractive import validate_abs, train_abs, baseline, test_abs, test_text_abs #(Not using abstractive summarization in our study)
-from train_extractive_hiwest import train_ext, validate_ext, test_ext
+from train_extractive_hiwest import train_ext, validate_ext, test_ext, test_baseline
 
 
 model_flags = ['hidden_size', 'ff_size', 'heads', 'emb_size', 'enc_layers', 'enc_hidden_size', 'enc_ff_size',
@@ -112,8 +113,10 @@ if __name__ == '__main__':
     # START MODIFICATION
     parser.add_argument("-other_bert", default="distilbert", type=str)
     parser.add_argument("-architecture", default='bertsum', type=str, choices=['bertsum', 'hiwest'])
+    parser.add_argument("-sharing", type=str2bool, nargs='?')
     parser.add_argument("-doc_weight", default=0.8, type=float)
     parser.add_argument("-extra_attention", default=False, type=str2bool)
+    parser.add_argument("-baseline_test", type=str, choices=['oracle', 'lead'])
     # END MODIFICATION
 
     args = parser.parse_args()
@@ -127,13 +130,19 @@ if __name__ == '__main__':
 
     if (args.mode == 'train'):
         # FOCUS
+
         train_ext(args, device_id)
+
     elif (args.mode == 'validate'):
         validate_ext(args, device_id)
     if (args.mode == 'test'):
-        cp = args.test_from
-        try:
-            step = int(cp.split('.')[-2].split('_')[-1])
-        except:
-            step = 0
-        test_ext(args, device_id, cp, step)
+        if len(args.baseline_test) > 0:
+            cp = args.test_from
+            test_baseline(args)
+        else:
+            cp = args.test_from
+            try:
+                step = int(cp.split('.')[-2].split('_')[-1])
+            except:
+                step = 0
+            test_ext(args, device_id, cp, step)

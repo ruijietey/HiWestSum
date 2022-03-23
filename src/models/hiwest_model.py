@@ -152,14 +152,19 @@ class HiWestSummarizer(nn.Module):
         self.device = device
         self.bert = Bert(args.large, args.temp_dir, args.finetune_bert, args.other_bert) # Modified: Add `args.other_bert`
         # Modification: Use same transformer for weight-sharing purpose
-        if args.other_bert == 'distilbert':
-            self.transformer = self.bert.model.transformer
-
+        self.sharing = args.sharing
+        if self.sharing is False:
+            self.ext_layer = ExtTransformerEncoder(self.bert.model.config.hidden_size, args.ext_ff_size, args.ext_heads,
+                                  args.ext_dropout, args.ext_layers)
         else:
-            self.transformer = self.bert.model.encoder  # For BERT, ALBERT, etc.
-        self.ext_layer = ExtLayer(self.transformer, args.other_bert, self.bert.model.config.hidden_size,
-                 args.ext_ff_size, args.ext_heads, args.ext_dropout,
-                 args.ext_layers, args.doc_weight, args.extra_attention)  # Added doc weight, layers
+            if args.other_bert == 'distilbert':
+                self.transformer = self.bert.model.transformer
+
+            else:
+                self.transformer = self.bert.model.encoder  # For BERT, ALBERT, etc.
+            self.ext_layer = ExtLayer(self.transformer, args.other_bert, self.bert.model.config.hidden_size,
+                     args.ext_ff_size, args.ext_heads, args.ext_dropout,
+                     args.ext_layers, args.doc_weight, args.extra_attention)  # Added doc weight, layers
 
         # END OF MODIFICATION
 
@@ -190,13 +195,19 @@ class HiWestSummarizer(nn.Module):
         self.to(device)
 
     def forward(self, src, segs, clss, mask_src, mask_cls):
-        # top_vec, cls_vec = self.bert(src, segs, mask_src)
-        top_vec = self.bert(src, segs, mask_src)
-        cls_vec = top_vec[:, 0, :].unsqueeze(1)
-        sents_vec = top_vec[torch.arange(top_vec.size(0)).unsqueeze(1), clss]
-        sents_vec = sents_vec * mask_cls[:, :, None].float()
-        sent_scores = self.ext_layer(sents_vec, mask_cls).squeeze(-1)
-        return sent_scores, mask_cls
+        if self.sharing == False:
+            top_vec = self.bert(src, segs, mask_src)
+            sents_vec = top_vec[torch.arange(top_vec.size(0)).unsqueeze(1), clss]
+            sents_vec = sents_vec * mask_cls[:, :, None].float()
+            sent_scores = self.ext_layer(sents_vec, mask_cls).squeeze(-1)
+        else:
+            # top_vec, cls_vec = self.bert(src, segs, mask_src)
+            top_vec = self.bert(src, segs, mask_src)
+            cls_vec = top_vec[:, 0, :].unsqueeze(1)
+            sents_vec = top_vec[torch.arange(top_vec.size(0)).unsqueeze(1), clss]
+            sents_vec = sents_vec * mask_cls[:, :, None].float()
+            sent_scores = self.ext_layer(sents_vec, mask_cls).squeeze(-1)
+            return sent_scores, mask_cls
 
 
 class ExtSummarizer(nn.Module):

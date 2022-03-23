@@ -17,7 +17,7 @@ import distributed
 from models import data_loader, hiwest_model
 from models.data_loader import load_dataset
 from models.hiwest_model import HiWestSummarizer, ExtSummarizer
-from models.trainer_ext import build_trainer
+from models.trainer_ext import build_trainer, baseline_test
 from others.logging import logger, init_logger
 
 model_flags = ['hidden_size', 'ff_size', 'heads', 'inter_layers', 'encoder', 'ff_actv', 'use_interval', 'rnn_size']
@@ -162,10 +162,8 @@ def validate(args, device_id, pt, step):
             setattr(args, k, opt[k])
     print(args)
 
-    if args.architecture == 'hiwest' or args.architecture == 'hiwestsum':
-        model = HiWestSummarizer(args, device, checkpoint)
-    else:
-        model = ExtSummarizer(args, device, checkpoint)
+    model = HiWestSummarizer(args, device, checkpoint)
+
     model.eval()
 
     valid_iter = data_loader.Dataloader(args, load_dataset(args, 'valid', shuffle=False),
@@ -190,10 +188,8 @@ def test_ext(args, device_id, pt, step):
             setattr(args, k, opt[k])
     print(args)
 
-    if args.architecture == 'hiwest' or args.architecture == 'hiwestsum':
-        model = HiWestSummarizer(args, device, checkpoint)
-    else:
-        model = ExtSummarizer(args, device, checkpoint)
+    model = HiWestSummarizer(args, device, checkpoint)
+
     model.eval()
 
     test_iter = data_loader.Dataloader(args, load_dataset(args, 'test', shuffle=False),
@@ -202,11 +198,35 @@ def test_ext(args, device_id, pt, step):
     trainer = build_trainer(args, device_id, model, None)
     trainer.test(test_iter, step)
 
+
+# Modification ###############################
+def test_baseline(args):
+    device = "cpu" if args.visible_gpus == '-1' else "cuda"
+
+    logger.info('Running validation on Baseline ...')
+
+    test_iter = data_loader.Dataloader(args, load_dataset(args, 'test', shuffle=False),
+                                       args.test_batch_size, device,
+                                       shuffle=False, is_test=True)
+    cal_oracle = False
+    cal_lead = False
+    if args.baseline_test == 'oracle':
+        cal_oracle = True
+    elif args.baseline_test == 'lead':
+        cal_lead = True
+    baseline_test(args, test_iter, cal_oracle, cal_lead)
+
+
+# END OF MODIFICATION ###################################
+
 def train_ext(args, device_id):
+    start_time = time.time()
     if (args.world_size > 1):
         train_multi_ext(args)
     else:
         train_single_ext(args, device_id)
+
+    logger.info("Training time is : %.2f" % (time.time() - start_time))
 
 
 def train_single_ext(args, device_id):
@@ -243,10 +263,8 @@ def train_single_ext(args, device_id):
         return data_loader.Dataloader(args, load_dataset(args, 'train', shuffle=True), args.batch_size, device,
                                       shuffle=True, is_test=False)
 
-    if args.architecture == 'hiwest' or args.architecture == 'hiwestsum':
-        model = HiWestSummarizer(args, device, checkpoint)
-    else:
-        model = ExtSummarizer(args, device, checkpoint)
+    model = HiWestSummarizer(args, device, checkpoint)
+
     optim = hiwest_model.build_optim(args, model, checkpoint)
 
     logger.info(model)
