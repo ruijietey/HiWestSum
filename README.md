@@ -9,6 +9,7 @@ Please refer to the [referenced repository](https://github.com/nlpyang/PreSumm) 
 ## Environment & Packages
 Please refer to requirements.txt
 Important packages:
+<ul>
 <li>torch==1.1.0</li>
 <li>transformers==4.16.2</li>
 <li>sentencepiece==0.1.96</li>
@@ -16,6 +17,9 @@ Important packages:
 <li>tensorboardX==1.9</li>
 <li>multiprocess==0.70.9</li>
 <li>pytorch-transformers==1.2.0</li>
+<li>nltk==3.7</li>
+  <li>sentencepiece==0.1.96</li>
+</ul>
 
 ## Model Training
 ### HIWESTSUM - ALBERT
