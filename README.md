@@ -57,8 +57,7 @@ Most extractive summarization models usually employ a hierarchical encoder for d
 In addition, most state-of-the-art (SOTA) models will be using huge number of parameters to learn from a large amount of data, and this causes the computational costs to be very
 expensive.
 
-In this project, Hierarchical Weight Sharing Transformers for Summarization (HIWESTSUM) is proposed for document summarization. HIWESTSUM is very light in weight with parameter size over 10 times smaller than current existing models that finetune
-BERT for summarization [1]. Moreover, the proposed model is faster than SOTA models with shorter training and inference time. It learns effectively from both sentence
+In this project, Hierarchical Weight Sharing Transformers for Summarization (HIWESTSUM) is proposed for document summarization. HIWESTSUM is very light in weight with parameter size over 10 times smaller than current existing models that [finetune BERT for summarization](https://arxiv.org/abs/1908.08345). Moreover, the proposed model is faster than SOTA models with shorter training and inference time. It learns effectively from both sentence
 and document level representations with weight sharing mechanisms.
 
 By adopting weight sharing and hierarchical learning strategies, it is proven in this project that the proposed model HIWESTSUM may reduce the usage of computational resources
