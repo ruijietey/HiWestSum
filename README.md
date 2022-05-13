@@ -6,6 +6,17 @@ Much of the codes are referenced from [github repository from NLPYang](https://g
 ## Data Preparation for CNN/DM
 Please refer to the [referenced repository](https://github.com/nlpyang/PreSumm) to download or preprocess the required dataset. Please note that the raw dataset should be preprocessed differently for ALBERT because of the difference in vocab file.
 
+## Environment & Packages
+Please refer to requirements.txt
+Important packages:
+<li>torch==1.1.0</li>
+<li>transformers==4.16.2</li>
+<li>sentencepiece==0.1.96</li>
+<li>pyrouge</li>
+<li>tensorboardX==1.9</li>
+<li>multiprocess==0.70.9</li>
+<li>pytorch-transformers==1.2.0</li>
+
 ## Model Training
 ### HIWESTSUM - ALBERT
 ```
@@ -24,7 +35,7 @@ Arguments:
   <li><b>-report_every 100</b> (set progress to be reported by logging every X step, X is the argument)</li>
   <li><b>-train_steps 10000</b> (set total training steps)</li>
   <li><b>-log_file ../logs/ext_bert_cnndm</b> (log file location) </li>
-  <li><b>-max_pos 512</b> (set max position for BERT truncation) </li>
+  <li><b>-max_pos 512</b> (set max position.For encoding a text longer than 512 tokens, for example 800. Set max_pos to 800 during both preprocessing and training.) </li>
   <li><b>-other_bert albert</b> (IMPORTANT, set the pretrained model to be used, albert/bert/distilbert) </li>
   <li><b>-batch_size 300<b> (set batch size) </li>  
   <li><b>-doc_weight 0.4</b> (IMPORTANT, set the document weight. document_weight + sent_weight = 1 </li>
