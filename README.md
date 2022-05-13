@@ -1,6 +1,6 @@
 # HiWestSum
 
-This is the repository for Hierarchical Document Representation for Summarization submitted to Nanyang Technological University School of Electrical & Electronic Engineering (https://hdl.handle.net/10356/157571).
+This is the repository for Final Year Project: Hierarchical Document Representation for Summarization submitted to Nanyang Technological University(https://hdl.handle.net/10356/157571).
 Much of the codes are referenced from [github repository from NLPYang](https://github.com/nlpyang/PreSumm) used for EMNLP 2019 paper [Text Summarization with Pretrained Encoders](https://arxiv.org/abs/1908.08345). Some codes are borrowed from ONMT(https://github.com/OpenNMT/OpenNMT-py)
 
 ## Data Preparation for CNN/DM
