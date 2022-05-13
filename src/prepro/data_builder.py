@@ -331,7 +331,7 @@ def _format_to_bert(params):
     for d in jobs:
         source, tgt = d['src'], d['tgt']
 
-        sent_labels = greedy_selection(source[:args.max_src_nsents], tgt, 3)
+        sent_labels = greedy_selection(source[:args.max_src_nsents], tgt, 4) # 4 sentences selected
         if (args.lower):
             source = [' '.join(s).lower().split() for s in source]
             tgt = [' '.join(s).lower().split() for s in tgt]

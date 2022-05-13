@@ -104,6 +104,7 @@ class ErrorHandler(object):
 
 
 def validate_ext(args, device_id):
+    start_time = time.time()
     timestep = 0
     if (args.test_all):
         cp_files = sorted(glob.glob(os.path.join(args.model_path, 'model_step_*.pt')))
@@ -144,8 +145,10 @@ def validate_ext(args, device_id):
                 time_of_cp = os.path.getmtime(cp)
                 if (time_of_cp > timestep):
                     continue
-            else:
-                time.sleep(300)
+
+    logger.info("Validation time is : %.2f" % (time.time() - start_time))
+    architecture = "hiwest" if args.doc_weight < 1 else "bertsum"
+    logger.info("%s has completed validation - Architecture:%s , Weight: %s, Weight sharing: %s, Extra Attention: %s " % (args.other_bert, architecture, args.doc_weight, args.sharing, args.extra_attention))
 
 
 def validate(args, device_id, pt, step):
@@ -204,7 +207,8 @@ def test_baseline(args):
     device = "cpu" if args.visible_gpus == '-1' else "cuda"
 
     logger.info('Running validation on Baseline ...')
-
+    start_time = time.time()
+    logger.info('The start time = %d' %start_time )
     test_iter = data_loader.Dataloader(args, load_dataset(args, 'test', shuffle=False),
                                        args.test_batch_size, device,
                                        shuffle=False, is_test=True)
@@ -215,6 +219,7 @@ def test_baseline(args):
     elif args.baseline_test == 'lead':
         cal_lead = True
     baseline_test(args, test_iter, cal_oracle, cal_lead)
+    logger.info('Finished in = %d' % (time.time() - start_time))
 
 
 # END OF MODIFICATION ###################################
@@ -226,7 +231,10 @@ def train_ext(args, device_id):
     else:
         train_single_ext(args, device_id)
 
+    architecture = "hiwestsum" if args.doc_weight < 1 else "bertsum"
     logger.info("Training time is : %.2f" % (time.time() - start_time))
+    logger.info("%s has completed training - Architecture:%s , Weight: %s, Weight sharing: %s, Extra Attention: %s " % (
+    args.other_bert, architecture, args.doc_weight, args.sharing, args.extra_attention))
 
 
 def train_single_ext(args, device_id):
