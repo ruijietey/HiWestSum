@@ -24,7 +24,7 @@ Important packages:
 ## Model Training
 ### HIWESTSUM - ALBERT
 ```
--task ext -mode train -bert_data_path ALBERT_DATA_PATH -ext_dropout 0.1 -model_path INTENDED_CHECKPOINT_SAVED_DIR -lr 2e-3 -visible_gpus 0,1,2,3 -report_every 100 -save_checkpoint_steps 1000 -train_steps 10000 -accum_count 2 -log_file ../logs/ext_bert_cnndm -use_interval true -warmup_steps 2000 -max_pos 512 -other_bert albert -batch_size 300 -doc_weight 0.4 -extra_attention False -sharing True
+python train.py -task ext -mode train -bert_data_path ALBERT_DATA_PATH -ext_dropout 0.1 -model_path INTENDED_CHECKPOINT_SAVED_DIR -lr 2e-3 -visible_gpus 0,1,2,3 -report_every 100 -save_checkpoint_steps 1000 -train_steps 10000 -accum_count 2 -log_file ../logs/ext_bert_cnndm -use_interval true -warmup_steps 2000 -max_pos 512 -other_bert albert -batch_size 300 -doc_weight 0.4 -extra_attention False -sharing True
 ```
 Arguments:
 <ul>
@@ -48,7 +48,7 @@ Arguments:
 
 ## Model Evaluation
 ```
--task ext -mode validate -batch_size 300 -test_batch_size 500 -bert_data_path ../albert_data/albert_data -log_file /home/students/s121md102_06/bertsum_experiment/PreSummWithMobileBert/logs/val_hiwest_distilbert_cnndm -model_path ./hiwest/albert0.4 -sep_optim true -use_interval true -visible_gpus 0,1,2,3 -max_pos 512 -max_length 200 -alpha 0.95 -min_length 50 -result_path ../logs/hiwestsum_al0.4 -other_bert albert -architecture hiwest -doc_weight 0.4 -extra_attention False -sharing True
+python train.py -task ext -mode validate -batch_size 300 -test_batch_size 500 -bert_data_path ../albert_data/albert_data -log_file /home/students/s121md102_06/bertsum_experiment/PreSummWithMobileBert/logs/val_hiwest_distilbert_cnndm -model_path ./hiwest/albert0.4 -sep_optim true -use_interval true -visible_gpus 0,1,2,3 -max_pos 512 -max_length 200 -alpha 0.95 -min_length 50 -result_path ../logs/hiwestsum_al0.4 -other_bert albert -architecture hiwest -doc_weight 0.4 -extra_attention False -sharing True
 ```
 
 ## Architecture of HiWestSum
