@@ -6,6 +6,16 @@ Much of the codes are referenced from [github repository from NLPYang](https://g
 ## Data Preparation for CNN/DM
 Please refer to the [referenced repository](https://github.com/nlpyang/PreSumm) to download or preprocess the required dataset. Please note that the raw dataset should be preprocessed differently for ALBERT because of the difference in vocab file.
 
+Please note that there are some added codes for processing ALBERT since the vocab file is different for ALBERT(vocab size 30000) as compared to BERT or DistilBERT (vocab size 30522). The only difference is in step 5:
+####  Step 5. Format to PyTorch Files
+```
+python preprocess.py -mode format_to_bert -raw_path JSON_PATH -save_path BERT_DATA_PATH  -lower -n_cpus 1 -log_file ../logs/preprocess.log -pretrained_model albert
+```
+
+* `JSON_PATH` is the directory containing json files (`../json_data`), `BERT_DATA_PATH` is the target directory to save the generated binary files (`../bert_data`)
+* `-pretrained_model` is added with arguments `bert` or `albert` or `distilbert` options where `albert` will have a difference in preprocessing in our repo.
+
+
 ## Environment & Packages
 Please refer to requirements.txt
 Important packages:
