@@ -12,7 +12,7 @@ Please note that there are some added codes for processing ALBERT since the voca
 python preprocess.py -mode format_to_bert -raw_path JSON_PATH -save_path BERT_DATA_PATH  -lower -n_cpus 1 -log_file ../logs/preprocess.log -pretrained_model albert
 ```
 
-* `JSON_PATH` is the directory containing json files (`../json_data`), `BERT_DATA_PATH` is the target directory to save the generated binary files (`../bert_data`)
+* `JSON_PATH` is the directory containing json files (`../json_data`), `BERT_DATA_PATH` is the target directory to save the generated binary files (`../bert_data` or `../albert_data`)
 * `-pretrained_model` is added with arguments `bert` or `albert` or `distilbert` options where `albert` will have a difference in preprocessing in our repo.
 
 
